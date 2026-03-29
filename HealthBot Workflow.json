@@ -1,0 +1,1150 @@
+{
+  "name": "HealthBot Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        0
+      ],
+      "id": "f3167642-89d8-47e9-b93c-88dad9b41789",
+      "name": "Telegram Trigger",
+      "webhookId": "6d718c58-16ed-4e08-be08-cdb3fd1cb3c3",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "Users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "6005a0ef-854f-45e5-a078-b45a910df280",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.user_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "c19b32e6-bae8-421b-9b37-9535d98a2141"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "12e6b495-2ddb-40cc-af5b-a7de4828f4a4",
+                    "leftValue": "={{ ['🍽 Log Meal', '📊 View Meals', '✏ Edit Meal', '🗑 Delete Meal', 'Stop']}}",
+                    "rightValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notContains",
+                      "rightType": "any"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3a4947ac-a0c3-415d-95d1-7c627e282ffe",
+                    "leftValue": "={{ ['🍽 Log Meal', '📊 View Meals', '✏ Edit Meal', '🗑 Delete Meal']}}",
+                    "rightValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "04d37411-1c6e-4522-ae17-5e0bd8c648ab",
+                    "leftValue": "={{ $json.is_user_active }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "13fdfab9-2439-463e-9346-9619acbf3129",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "Stop",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        0
+      ],
+      "id": "3018078d-b60e-42a4-b48d-28e890f54d98",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{\n  \"Today's Meals 🍽\\n\" +\n  $('Get Meals').all()\n    .map((item, index) => `${index + 1}. ${item.json.meal_name}`)\n    .join(\"\\n\")\n}}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🍽 Log Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "📊 View Meals",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏ Edit Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "🗑 Delete Meal",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Stop",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        272
+      ],
+      "id": "c78479c3-2aae-44bd-8007-75f20c77de45",
+      "name": "View Meals",
+      "webhookId": "26d8c990-8e58-497b-b9ff-11c3cbcbc01f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Meals",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "meal_name",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -48
+      ],
+      "id": "7d3cac0d-7477-4c58-9022-acc6cdb75ea9",
+      "name": "Create Meal",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Meals",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "keyName": "created_at",
+              "condition": "gt",
+              "keyValue": "={{ new Date().toISOString().split('T')[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        512,
+        272
+      ],
+      "id": "78f72cf3-ca0e-44a1-9e95-f5c540e04ab9",
+      "name": "Get Meals",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "daa1c365-cf78-4f52-bf0b-7e5988ea39ba",
+              "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "rightValue": "📊 View Meals",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        272,
+        336
+      ],
+      "id": "46401236-f058-4052-a709-1b458c8c6fca",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{\n  ({\n    '🍽 Log Meal': 'What meal did you eat? 🍽',\n    '✏ Edit Meal': `✏ Edit Meal\n\nSend the old meal and the new meal separated by a comma.\n\nExample:Chicken Rice, Pasta`,\n    '🗑 Delete Meal': `Send the meal name to delete.\nExample: Pasta`\n  })[$('Telegram Trigger').item.json.message.text] ?? 'unknown command'\n}}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🍽 Log Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "📊 View Meals",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏ Edit Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "🗑 Delete Meal",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Stop",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        432
+      ],
+      "id": "e9bf4d62-f3cf-4fef-8a83-5bb7caa72297",
+      "name": "Meal Context",
+      "webhookId": "26d8c990-8e58-497b-b9ff-11c3cbcbc01f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Users",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "username",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.username }}"
+            },
+            {
+              "fieldId": "is_user_active",
+              "fieldValue": "True"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        272,
+        -144
+      ],
+      "id": "7041d0b5-d89c-49e4-8126-8a6911fa5a1a",
+      "name": "Create New User",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Welcome to your Health Tracker 🥗\n\nTrack your daily meals easily.\n\nChoose an option below:",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🍽 Log Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "📊 View Meals",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏ Edit Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "🗑 Delete Meal",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Stop",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        -144
+      ],
+      "id": "036bb4a2-0f00-4e2d-b574-2714f0994b2c",
+      "name": "Send message to new user",
+      "webhookId": "4f3d4f22-1565-412c-9d28-c87ee211ef9d",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Welcome to your Health Tracker 🥗\n\nTrack your daily meals easily.\n\nChoose an option below:",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🍽 Log Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "📊 View Meals",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏ Edit Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "🗑 Delete Meal",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Stop",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        304
+      ],
+      "id": "0f0c5645-f343-4836-bfaf-80f2b18ec6b9",
+      "name": "Send message to fresh user",
+      "webhookId": "4f3d4f22-1565-412c-9d28-c87ee211ef9d",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "You've stopped the Health Tracker bot 🛑",
+        "additionalFields": {
+          "appendAttribution": true
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        464
+      ],
+      "id": "c3961fae-d13f-464e-839d-ecb51a070109",
+      "name": "Send a text message",
+      "webhookId": "1af5a50c-705c-4c10-bb54-b1f5d17348d4",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').item.json.user_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "is_user_active",
+              "fieldValue": "False"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        272,
+        464
+      ],
+      "id": "ae03b52e-0210-4fa2-8382-c4a991601a80",
+      "name": "Update User",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').item.json.user_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "last_event_action",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        928,
+        432
+      ],
+      "id": "01852995-ce86-477e-8435-d0c3ad1b837a",
+      "name": "Update User1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get a row').item.json.last_event_action }}",
+                    "rightValue": "🍽 Log Meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "46cfbec5-b6d8-4a38-a2b4-4d7a8e5eb24c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "13d9d9fa-d824-41d8-8200-16f9068bd654",
+                    "leftValue": "={{ $('Get a row').item.json.last_event_action }}",
+                    "rightValue": "✏ Edit Meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "840d2d12-f916-4fc4-8a4a-49816681326a",
+                    "leftValue": "={{ $('Get a row').item.json.last_event_action }}",
+                    "rightValue": "🗑 Delete Meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        48
+      ],
+      "id": "03510629-3358-46d5-bfa9-059400b50017",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Meals",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').item.json.user_id }}"
+            },
+            {
+              "keyName": "meal_name",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.text.split(\",\")[0].trim() }}"
+            },
+            {
+              "keyName": "created_at",
+              "condition": "gt",
+              "keyValue": "={{ new Date().toISOString().split('T')[0] }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "meal_name",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.text.split(\",\")[1].trim() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        512,
+        64
+      ],
+      "id": "41036a94-330a-4b3e-9ca5-52848e70324d",
+      "name": "Update Meal",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "Meals",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get a row').item.json.user_id }}"
+            },
+            {
+              "keyName": "meal_name",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.text }}"
+            },
+            {
+              "keyName": "created_at",
+              "condition": "gt",
+              "keyValue": "={{ new Date().toISOString().split('T')[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        624,
+        160
+      ],
+      "id": "a08ef162-cb18-4ca3-8b5c-668e140f52c3",
+      "name": "Delete Meal",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "PVwXIbyMrsx7bjhL",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{\n  ({\n    '🍽 Log Meal': `✅ Meal logged!\\n🍽 ${$('Telegram Trigger').item.json.message.text} has been added to your meals today`,\n    '✏ Edit Meal': (() => {\n      const parts = $('Telegram Trigger').item.json.message.text.split(\",\");\n      return parts.length >= 2\n        ? `✅ Meal updated!\\n${parts[0].trim()} → ${parts[1].trim()}`\n        : `❌ Wrong format! Please send:\\nOldMeal, NewMeal`;\n    })(),\n    '🗑 Delete Meal': `✅ Meal deleted!\\n${$('Telegram Trigger').item.json.message.text} has been removed from your meals.`\n  })[$('Get a row').item.json.last_event_action] ?? 'unknown command'\n}}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🍽 Log Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "📊 View Meals",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏ Edit Meal",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "🗑 Delete Meal",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Stop",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        64
+      ],
+      "id": "9644e3e8-b3ab-4dfc-9c2f-0f77b51e473a",
+      "name": "Meal Context1",
+      "webhookId": "26d8c990-8e58-497b-b9ff-11c3cbcbc01f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gLDeqT5drM2cV6th",
+          "name": "HealthBot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Create New User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send message to fresh user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Meals": {
+      "main": [
+        [
+          {
+            "node": "View Meals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get Meals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Meal Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meal Context": {
+      "main": [
+        [
+          {
+            "node": "Update User1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New User": {
+      "main": [
+        [
+          {
+            "node": "Send message to new user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Update User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "View Meals": {
+      "main": [
+        [
+          {
+            "node": "Update User1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create Meal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Meal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Meal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Meal": {
+      "main": [
+        [
+          {
+            "node": "Meal Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Meal": {
+      "main": [
+        [
+          {
+            "node": "Meal Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Meal": {
+      "main": [
+        [
+          {
+            "node": "Meal Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e52d5de1-7694-4f63-bbb6-164b8776446d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "736dfd70adeecb3072bfe850a1352976ce96e3564c002fa02f9b0a525fb7e14a"
+  },
+  "id": "ua1xpSh4Y25Pbqpd",
+  "tags": []
+}
