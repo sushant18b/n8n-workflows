@@ -68,7 +68,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key_here
 # Statsig
 STATSIG_API_KEY=your_statsig_api_key_here
 STATSIG_INITIALIZE_URL=https://api.statsig.com/v1/initialize
-STATSIG_LOG_EVENT_URL=https://api.statsig.com/v1/log_event
+STATSIG_LOG_EVENT_URL=https://statsigapi.net/v1/log_event
 ```
 
 ### Environment Variable Details
