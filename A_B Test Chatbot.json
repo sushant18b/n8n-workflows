@@ -1,0 +1,1023 @@
+{
+  "name": "Telegram A/B Test 3-Step Onboarding",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1664,
+        144
+      ],
+      "id": "c7001706-dd31-43c9-a88c-661e851a61e0",
+      "name": "Telegram Trigger",
+      "webhookId": "497e56c8-74ca-493f-8ecd-b4ac5568f38e",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "User",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        144
+      ],
+      "id": "f37d067a-0686-4b07-98b8-b9b768e6a0e2",
+      "name": "Get User",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8dcb30b8-c916-48b9-95ee-a4ba7955a934",
+                    "leftValue": "={{ $json.user_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ffcfcf72-b119-481a-8859-6543917f912c",
+                    "leftValue": "={{ $json.user_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        144
+      ],
+      "id": "0dd88482-457d-477a-bd12-9317b2f5fe86",
+      "name": "Switch User Exists"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.statsig.com/v1/initialize",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "statsig-api-key",
+              "value": "secret-o2ikovDazMuqEKNjpZdCaRhWLh8U2boH0EBblUF1kpk"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"user\": {\n    \"userID\": \"{{ $('Telegram Trigger').item.json.message.from.id }}\"\n  },\n  \"experiments\": [\"telegram_onboarding_test\"]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -976,
+        -64
+      ],
+      "id": "75e2bcfd-9500-4d2c-8c67-8a5be69a7b3a",
+      "name": "Initialize Statsig"
+    },
+    {
+      "parameters": {
+        "tableId": "User",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "username",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.username }}"
+            },
+            {
+              "fieldId": "group",
+              "fieldValue": "={{ Object.values($json.dynamic_configs ?? {})[0]?.group_name || $json.group_name || 'Control' }}"
+            },
+            {
+              "fieldId": "message",
+              "fieldValue": "new_user"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -64
+      ],
+      "id": "60624814-2230-4697-88cc-dfe0bf45a4f4",
+      "name": "Create User",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://statsigapi.net/v1/log_event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "statsig-api-key",
+              "value": "secret-o2ikovDazMuqEKNjpZdCaRhWLh8U2boH0EBblUF1kpk"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"events\": [\n    {\n      \"eventName\": \"new_user\",\n      \"user\": {\n        \"userID\": \"{{ $('Telegram Trigger').item.json.message.from.id }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -496,
+        -64
+      ],
+      "id": "49b60839-99a0-4ef7-a627-e5c42aa82c33",
+      "name": "Log New User"
+    },
+    {
+      "parameters": {
+        "tableId": "Events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "event_name",
+              "fieldValue": "new_user"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -64
+      ],
+      "id": "dcbb228d-6898-4c4f-bde7-5f7387b4efd9",
+      "name": "Create Event New User",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2babf411-63e3-4eac-97a9-ef685726e1da",
+                    "leftValue": "={{ $('Initialize Statsig').item.json.dynamic_configs['JMkQYpfOnz8RlZkqyf6r2inoMVTlPZia01yUDYUJEHY='].group_name }}",
+                    "rightValue": "Control",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "22b8f71d-ae18-4b49-96aa-01d2990029be",
+                    "leftValue": "={{ $('Initialize Statsig').item.json.dynamic_configs['JMkQYpfOnz8RlZkqyf6r2inoMVTlPZia01yUDYUJEHY='].group_name }}",
+                    "rightValue": "Test",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        -64
+      ],
+      "id": "1b3debf5-d3a2-46f7-b916-8538807f01e7",
+      "name": "Switch Group"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Welcome to our bot 👋\n\nHere is a simple welcome message.",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Continue",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "c4ca474f-91d0-4d2b-8e67-7338890dc3f0",
+      "name": "Send Control Welcome",
+      "webhookId": "498e0dbd-1516-491b-a34e-5691275c411a",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Welcome! 👋\n\nStep 1 of 3:\nWhat are you looking for?\n\n1️⃣ Products\n2️⃣ Services",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Products",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "Services",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        16
+      ],
+      "id": "8ef330aa-d74c-421a-8c23-4b0e715b7ccd",
+      "name": "Send Test Step 1",
+      "webhookId": "3357bf64-1306-40ea-b7f6-d71f7ac44f61",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "54e3c883-c79e-4f8b-bb01-ba03d38c2d2a",
+                    "leftValue": "={{ $json.event_name }}",
+                    "rightValue": "new_user",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d87096e5-3c26-42e2-93be-e7af52bf9425",
+                    "leftValue": "={{ $json.event_name }}",
+                    "rightValue": "onboarding_step_1_completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "68bf5596-2183-4856-a98d-77449dbbc9d1",
+                    "leftValue": "={{ $json.event_name }}",
+                    "rightValue": "onboarding_step_2_completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -752,
+        272
+      ],
+      "id": "46d36016-0355-4154-bae9-0a66a7fb7301",
+      "name": "Switch Test Step"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://statsigapi.net/v1/log_event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "statsig-api-key",
+              "value": "secret-o2ikovDazMuqEKNjpZdCaRhWLh8U2boH0EBblUF1kpk"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"events\": [\n    {\n      \"eventName\": \"onboarding_step_1_completed\",\n      \"user\": {\n        \"userID\": \"{{ $('Telegram Trigger').item.json.message.from.id }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -512,
+        128
+      ],
+      "id": "1856a7a7-0dcb-4098-b3c9-b8f0d0be9fc1",
+      "name": "Log Step 1"
+    },
+    {
+      "parameters": {
+        "tableId": "Events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "event_name",
+              "fieldValue": "onboarding_step_1_completed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        128
+      ],
+      "id": "31e59759-8f6d-41a3-87aa-aef806060b2e",
+      "name": "Create Event Step 1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Nice! 👍\n\nStep 2 of 3:\nWhich category do you prefer?\n\n1️⃣ Tech\n2️⃣ Travel\n3️⃣ Finance",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Tech",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "Travel",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "Finance",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        128
+      ],
+      "id": "2b97dd4d-98c5-43c8-af39-5cddba535166",
+      "name": "Send Test Step 2",
+      "webhookId": "2cff2b61-ae5e-4453-a802-d2e24972e935",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://statsigapi.net/v1/log_event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "statsig-api-key",
+              "value": "secret-o2ikovDazMuqEKNjpZdCaRhWLh8U2boH0EBblUF1kpk"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"events\": [\n    {\n      \"eventName\": \"onboarding_step_2_completed\",\n      \"user\": {\n        \"userID\": \"{{ $('Telegram Trigger').item.json.message.from.id }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -512,
+        320
+      ],
+      "id": "69261541-c0d1-4514-a665-837305972887",
+      "name": "Log Step 2"
+    },
+    {
+      "parameters": {
+        "tableId": "Events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "event_name",
+              "fieldValue": "onboarding_step_2_completed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        320
+      ],
+      "id": "6ff829ae-6f9f-438f-be26-f03673ed2579",
+      "name": "Create Event Step 2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Awesome 🚀\n\nStep 3 of 3:\nHow often do you want updates?\n\n1️⃣ Daily\n2️⃣ Weekly\n3️⃣ Monthly",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Daily",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "Weekly",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "Monthly",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": false
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        320
+      ],
+      "id": "9cf68079-efb8-42dd-926e-2c29686cba4f",
+      "name": "Send Test Step 3",
+      "webhookId": "f9eb5898-42a0-4e4a-8821-bbe44f566644",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://statsigapi.net/v1/log_event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "statsig-api-key",
+              "value": "secret-o2ikovDazMuqEKNjpZdCaRhWLh8U2boH0EBblUF1kpk"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"events\": [\n    {\n      \"eventName\": \"onboarding_completed\",\n      \"user\": {\n        \"userID\": \"{{ $('Telegram Trigger').item.json.message.from.id }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -512,
+        496
+      ],
+      "id": "c7c1c186-6c0b-4142-8f06-95931e4160d0",
+      "name": "Log Completed"
+    },
+    {
+      "parameters": {
+        "tableId": "Events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "event_name",
+              "fieldValue": "onboarding_completed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        496
+      ],
+      "id": "822cb940-214b-4319-b82b-0f4e6edba18d",
+      "name": "Create Event Completed",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "🎉 You're all set!\n\nThanks for completing onboarding.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        496
+      ],
+      "id": "c92c1a45-2c0d-4891-beb6-9b708e4bb80c",
+      "name": "Send Test Completed",
+      "webhookId": "7010bf52-8c19-4e64-815d-e5ee9dc175b0",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjrWNT1NRSQxjrvJ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://cejvxsshwvpzakrjxdak.supabase.co/rest/v1/Events?select=*&order=created_at.desc&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -976,
+        288
+      ],
+      "id": "c578c203-3bfc-4ac7-8be7-bfb61192b687",
+      "name": "Latest Event of User",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8wglIVyqNs4mVLIE",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User": {
+      "main": [
+        [
+          {
+            "node": "Switch User Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch User Exists": {
+      "main": [
+        [
+          {
+            "node": "Initialize Statsig",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Latest Event of User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Statsig": {
+      "main": [
+        [
+          {
+            "node": "Create User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create User": {
+      "main": [
+        [
+          {
+            "node": "Log New User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log New User": {
+      "main": [
+        [
+          {
+            "node": "Create Event New User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event New User": {
+      "main": [
+        [
+          {
+            "node": "Switch Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Group": {
+      "main": [
+        [
+          {
+            "node": "Send Control Welcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Test Step 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Test Step": {
+      "main": [
+        [
+          {
+            "node": "Log Step 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Step 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Step 1": {
+      "main": [
+        [
+          {
+            "node": "Create Event Step 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event Step 1": {
+      "main": [
+        [
+          {
+            "node": "Send Test Step 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Step 2": {
+      "main": [
+        [
+          {
+            "node": "Create Event Step 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event Step 2": {
+      "main": [
+        [
+          {
+            "node": "Send Test Step 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Completed": {
+      "main": [
+        [
+          {
+            "node": "Create Event Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event Completed": {
+      "main": [
+        [
+          {
+            "node": "Send Test Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Latest Event of User": {
+      "main": [
+        [
+          {
+            "node": "Switch Test Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b387b482-efaa-4bea-954c-7c781dda967d",
+  "meta": {
+    "instanceId": "736dfd70adeecb3072bfe850a1352976ce96e3564c002fa02f9b0a525fb7e14a"
+  },
+  "id": "UwZL2qZNuzV1891v",
+  "tags": []
+}
