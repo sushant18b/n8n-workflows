@@ -199,7 +199,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://production-sfo.browserless.io/function?token=2Uxt8QAYWelrR12a875b2971688c81248dee000755fe721b4",
+        "url": "https://production-sfo.browserless.io/function?token=YOUR_API_KEY",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
