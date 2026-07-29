@@ -1,0 +1,514 @@
+{
+  "name": "Registration Automation (With Retry)",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "statusCode",
+              "value": "={{ $('Register via Browserless1').item.json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "t2",
+              "name": "retryCount",
+              "value": "={{ $if($('Increment Retry Count').isExecuted, $('Increment Retry Count').item.json.retryCount, $('Generate Session ID1').item.json.retryCount) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        368
+      ],
+      "id": "16d6e5b4-f238-420b-bb05-1aa7f115cfd5",
+      "name": "Track Retry Count"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "82424cbb-84da-4e2b-a19e-525bb80bf86c",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 429,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        368
+      ],
+      "id": "dd193039-fc11-4f72-a22b-f7639a198ef8",
+      "name": "Check Status (429?)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b1c2d3e4-0002-4a1a-9c1a-000000000002",
+              "leftValue": "={{ $json.retryCount }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        272
+      ],
+      "id": "84e50eae-88b2-45e0-9ad1-6ebbc9be9501",
+      "name": "Retries Remaining?"
+    },
+    {
+      "parameters": {
+        "amount": "={{ 5 * Math.pow(2, $json.retryCount) }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        208
+      ],
+      "id": "3163e22d-850b-48e3-b8a2-acba060407b0",
+      "name": "Wait (Backoff)",
+      "webhookId": "b9428e9e-17f2-4fdb-98f4-e2942576ed2e"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i1",
+              "name": "retryCount",
+              "value": "={{ $('Track Retry Count').item.json.retryCount + 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        208
+      ],
+      "id": "df637528-7ea5-4fdf-ac4d-d83adff01eb2",
+      "name": "Increment Retry Count"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ca5e6ac9-f558-4da7-80db-f88d434ea19b",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -880,
+        368
+      ],
+      "id": "c2758997-79f1-4226-87d1-385f443fd654",
+      "name": "Webhook1",
+      "webhookId": "ca5e6ac9-f558-4da7-80db-f88d434ea19b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "sessionId",
+              "value": "={{ $execution.id }}-{{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "password",
+              "value": "={{ $json.body.password }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "submittedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "retryCount",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -656,
+        368
+      ],
+      "id": "bd1440b8-d6bb-4c8b-a6a9-44173da0c8d5",
+      "name": "Generate Session ID1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://production-sfo.browserless.io/function?token=2Uxt8QAYWelrR12a875b2971688c81248dee000755fe721b4",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"code\": \"export default async ({ page }) => {\\n  try {\\n    const email = '{{ $('Generate Session ID1').item.json.email }}';\\n    const password = '{{ $('Generate Session ID1').item.json.password }}';\\n\\n    await page.goto('https://propinspection.com/auth1', {\\n      waitUntil: 'networkidle2',\\n      timeout: 30000\\n    });\\n\\n    await new Promise(resolve => setTimeout(resolve, 3000));\\n\\n    const emailInput = await page.$('input[name=\\\"email\\\"]');\\n    if (!emailInput) {\\n      throw new Error('Email input not found');\\n    }\\n\\n    await emailInput.click();\\n    await emailInput.type(email);\\n\\n    await page.keyboard.press('Tab');\\n    await new Promise(resolve => setTimeout(resolve, 500));\\n\\n    await page.keyboard.type(password);\\n\\n    await page.keyboard.press('Tab');\\n    await new Promise(resolve => setTimeout(resolve, 300));\\n\\n    await page.keyboard.press('Enter');\\n\\n    await new Promise(resolve => setTimeout(resolve, 5000));\\n\\n    const finalUrl = page.url();\\n\\n    if (finalUrl.includes('/auth1')) {\\n      return {\\n        success: false,\\n        error: 'Login did not redirect. Credentials may be invalid or Sign In was not activated.',\\n        finalUrl\\n      };\\n    }\\n\\n    return {\\n      success: true,\\n      finalUrl\\n    };\\n\\n  } catch (error) {\\n    return {\\n      success: false,\\n      error: error.message,\\n      finalUrl: page.url()\\n    };\\n  }\\n};\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -432,
+        368
+      ],
+      "id": "95293bb4-d54c-4f1d-a7a7-e8b50f4b9835",
+      "name": "Register via Browserless1",
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "tableId": "registrations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $('Generate Session ID1').item.json.email }}"
+            },
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Generate Session ID1').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "status_code",
+              "fieldValue": "={{ $('Register via Browserless1').item.json.statusCode }}"
+            },
+            {
+              "fieldId": "status_msg",
+              "fieldValue": "={{ $('Register via Browserless1').item.json.statusMessage }}"
+            },
+            {
+              "fieldId": "success",
+              "fieldValue": "={{ $('Register via Browserless1').item.json.body.success }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        240,
+        496
+      ],
+      "id": "2e7d637a-01f7-4c7f-aa41-10d219ccb1a5",
+      "name": "Insert Registration Record2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dL8CzFIZfKKUXbYG",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "sushant18b@gmail.com",
+        "toEmail": "={{ $('Generate Session ID1').item.json.email }}",
+        "subject": "Your registration is complete",
+        "html": "=<p>Hi,</p><p>Your registration (session <b>{{ $('Generate Session ID1').item.json.sessionId }}</b>) completed successfully at {{ $('Generate Session ID1').item.json.submittedAt }}.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        496
+      ],
+      "id": "a1cb1326-b7fa-4e35-9cb2-a476fcff1a3c",
+      "name": "Send Success Email1",
+      "webhookId": "7b00bab6-eeee-402a-9d3f-34c138b7eda4",
+      "credentials": {
+        "smtp": {
+          "id": "rWARn93umUjWYETm",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e303d4a5-27dd-4234-8596-6843bdde3e0b",
+              "name": "error",
+              "value": "={{ JSON.stringify($('Register via Browserless1').item.json) }}",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "finalRetryCount",
+              "value": "={{ $json.retryCount }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        352
+      ],
+      "id": "0f72b6bf-1581-4403-8f09-1c77104c2050",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "tableId": "registrations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $('Generate Session ID1').item.json.email }}"
+            },
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Generate Session ID1').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "status_code",
+              "fieldValue": "={{ $('Register via Browserless1').item.json.statusCode }}"
+            },
+            {
+              "fieldId": "status_msg",
+              "fieldValue": "={{ $json.error }}"
+            },
+            {
+              "fieldId": "success",
+              "fieldValue": false
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        688,
+        352
+      ],
+      "id": "f3a91a0a-028b-4109-8c8f-fe3d00c0ed99",
+      "name": "Insert Registration Record3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dL8CzFIZfKKUXbYG",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Track Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Check Status (429?)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status (429?)": {
+      "main": [
+        [
+          {
+            "node": "Retries Remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Registration Record2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retries Remaining?": {
+      "main": [
+        [
+          {
+            "node": "Wait (Backoff)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Backoff)": {
+      "main": [
+        [
+          {
+            "node": "Increment Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Retry Count": {
+      "main": [
+        [
+          {
+            "node": "Register via Browserless1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Generate Session ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Session ID1": {
+      "main": [
+        [
+          {
+            "node": "Register via Browserless1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register via Browserless1": {
+      "main": [
+        [
+          {
+            "node": "Track Retry Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Registration Record2": {
+      "main": [
+        [
+          {
+            "node": "Send Success Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Insert Registration Record3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c6ba8614-870b-4ffb-9cd3-bee81812dcd2",
+  "meta": {
+    "instanceId": "832f587783b45ca8bcb8504944220bde2c61ab88b2f8d47c849cddd8c4602b74"
+  },
+  "id": "OODIbIpJEqOUNX97",
+  "tags": []
+}
